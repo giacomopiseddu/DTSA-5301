@@ -1,0 +1,144 @@
+---
+title: "NYPD Shooting Incident Data report"
+author: "G. Piseddu"
+date: "2024-10-31"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r load-packages, include=FALSE}
+library(dplyr)
+library(magrittr)
+library(knitr)
+library(tidyr)
+library(tidyverse)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In this Analysis we will explore the NYPD shooting incident data report to see which are the most dangerous neighborhoods in NYC for shootings and we will analyze what are the characteristics of each shooting reported to each neighborhood.
+
+## Importing the data and creating a Dataframe
+
+We start by importing the dataset and creating a dataframe
+
+```{r import dataset}
+
+NYPD_dataset <- read_csv("https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD", show_col_types = FALSE)
+
+```
+
+## Summary of the data
+
+We can see the summary of the Dataframe and we can decide which variable is needed and which is not for out analysis.
+
+``` {r summary, echo=TRUE}
+
+summary(NYPD_dataset)
+
+```
+
+The Variables not necessary for our study are:
+
+PRECINCT,JURISDICTION_CODE,STATISTICAL_MURDER_FLAG,X_COORD_CD,Y_COORD_CD,
+Latitude,Longitude,Lon_Lat,LOCATION_DESC,PERP_AGE_GROUP,PERP_SEX,INCIDENT_KEY,
+PERP_RACE,VIC_AGE_GROUP,VIC_SEX,VIC_RACE
+
+## Removing Variables not needed
+
+``` {r not necessary, echo = TRUE}
+
+NYPD_dataset <- NYPD_dataset %>% select(-PRECINCT,-JURISDICTION_CODE,-STATISTICAL_MURDER_FLAG,-X_COORD_CD,-Y_COORD_CD,-Latitude,-Longitude,-Lon_Lat,-LOCATION_DESC,-PERP_AGE_GROUP,-PERP_SEX,-INCIDENT_KEY,-PERP_RACE,-VIC_AGE_GROUP,-VIC_SEX,-VIC_RACE)
+
+head(NYPD_dataset)
+
+```
+
+## Removing NA's
+
+As we can see there are columns with NA values, we can solve that by removing them.
+
+``` {r removing, echo = TRUE}
+
+NYPD_dataset = NYPD_dataset %>% drop_na(OCCUR_DATE,OCCUR_TIME,BORO,LOC_OF_OCCUR_DESC,LOC_CLASSFCTN_DESC)
+
+
+```
+
+As showed here, there are no more NA's
+
+``` {r showing, echo=FALSE}
+
+summary(NYPD_dataset)
+
+```
+
+## Head of Dataset
+
+```{r head,echo=FALSE}
+
+head(NYPD_dataset)
+
+```
+
+## Neighborhoods shooting analysis and Location of Shootings visualization
+
+We can start by looking which of the Neighborhood reported has had more shootings from the Dataset.
+
+``` {r graph, echo = FALSE}
+
+ggplot(data = NYPD_dataset, aes(x = BORO)) + geom_bar()
+
+```
+
+We can now visualize if the shooting happened inside or outside.
+
+``` {r graph 1, echo = FALSE}
+
+ggplot(data = NYPD_dataset, aes(x = BORO)) + geom_bar(data = NYPD_dataset, aes(fill = LOC_OF_OCCUR_DESC))
+
+```
+
+And we can also visualize the description of where the shooting happened
+
+``` {r graph 2, echo = FALSE}
+
+ggplot(data = NYPD_dataset, aes(x = BORO)) + geom_bar(data = NYPD_dataset, aes(fill = LOC_CLASSFCTN_DESC))
+
+```
+
+From the three graphs we can see that the neighborhoods where most shootings were reported, are Bronx and Brooklyn, these two neighborhoods have a number of reported shootings that is similar and is almost two times higher than Manhattan or Queens.
+Staten Island had a very low number of shootings reported.
+
+The graphs of the Location shows that:
+
+- In every neighborhood shootings occurred more outside than inside.
+- In every neighborhood the most common location of shooting was a street.
+- Bronx and Brooklyn have a similar number of shootings reported but their main difference is that in the Bronx more shootings happened in the street and less in Housing, while in Brooklyn is the opposite.
+- Manhattan had slightly more shootings reported than Queens, this difference is caused by the larger number of shootings happened in the Houses.
+
+## Linear Model between variables STATISTICAL_MURDER_FLAG and BORO
+
+``` {r model, echo = TRUE}
+
+NYPD_dataset <- read_csv("https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD", show_col_types = FALSE)
+
+NYPD_dataset <- NYPD_dataset %>% select(BORO, STATISTICAL_MURDER_FLAG)
+
+NYPD_dataset <- NYPD_dataset %>% drop_na(BORO, STATISTICAL_MURDER_FLAG)
+
+mod <- lm(STATISTICAL_MURDER_FLAG ~ BORO, data = NYPD_dataset)
+
+summary(mod)
+
+```
+
+## Possible bias of the study
+
+- By considering the only number of shootings reported, we're not considering the population of the neighborhood. We could discover that the shootings reported per person are higher in a neighborhood where the total shooting were lower (for example Staten Island).
+
+- Not every shooting is reported. There might be shootings happened that have never been recorded by the Police. 
+
